@@ -56,6 +56,13 @@ class Plusofon(APIView):
     serializer_class = Plusofon_serializer
 
     def post(self, request: Request):
-        print(request.data)
+        data = request.data
+        number_list = data.get('from', [])
+        if len(number_list) == 0:
+            return Response({"ok": False})
 
+        number = number_list[0]
+        verify = User_services.plusofon_verify(number)
+        if not verify:
+            return Response({"ok": False})
         return Response({"ok": True})

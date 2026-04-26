@@ -5,6 +5,7 @@ from apps.user.models import CustomUser
 
 class User_serializer(serializers.ModelSerializer):
     profiles = serializers.ListField(read_only=True)
+    phone = serializers.CharField(required=True)
 
     class Meta:
         model = CustomUser
