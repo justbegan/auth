@@ -1,0 +1,8 @@
+*venv*
+.env*
+*.pyc
+*cpython*
+/media
+/logs
+/static
+/temp
