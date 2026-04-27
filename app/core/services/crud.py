@@ -2,13 +2,15 @@ from django.db.models import Model
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
 import logging
+from typing import Type
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 logger = logging.getLogger('django')
 
 
 # класс APIView drf не добавляет контекст в сериализаторе, приходится в ручную получать
 
-class Base_crud:
+class BaseCrud:
     @staticmethod
     def update(model: Model, serializer: ModelSerializer, data: dict, parameters: dict, context: dict = None):
         """
@@ -25,17 +27,27 @@ class Base_crud:
         raise serializers.ValidationError(serializer.errors)
 
     @staticmethod
-    def get(model: Model, serializer: ModelSerializer, parameters: dict = {}, context: dict = None):
+    def get(
+        model: Type[Model],
+        serializer: Type[ModelSerializer],
+        parameters: dict | None = None,
+        context: dict | None = None
+    ):
         """
         Получает 1 объект из базы
         """
-        if context is None:
-            context = {}
+        parameters = parameters or {}
+        context = context or {}
+
         try:
             obj = model.objects.get(**parameters)
             return serializer(obj, context=context).data
-        except Exception as e:
-            logger.exception(f"Ошибка получения данных в crud {e}")
+
+        except ObjectDoesNotExist:
+            return {}
+
+        except MultipleObjectsReturned:
+            logger.exception("Найдено несколько объектов вместо одного")
             return {}
 
     @staticmethod

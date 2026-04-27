@@ -1,13 +1,13 @@
 import phonenumbers
 
 from apps.user.models import CustomUser
-from apps.user.api.v1.serializers import User_serializer
-from core.base.crud import Core_crud
+from apps.user.api.v1.serializers import UserSerializer
+from core.base.crud import CoreCrud
 
 
-class User_services(Core_crud):
+class UserServices(CoreCrud):
     model = CustomUser
-    serializer = User_serializer
+    serializer = UserSerializer
 
     @classmethod
     def get_user_by_number(cls, number):

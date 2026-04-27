@@ -10,7 +10,7 @@ from .serializers import TokenResponseSerializer, CustomTokenSerializer
     summary="Получить jwt токен",
     responses={200: TokenResponseSerializer}
 )
-class Get_token(TokenObtainPairView):
+class GetToken(TokenObtainPairView):
     serializer_class = CustomTokenSerializer
 
     def post(self, request: Request, *args, **kwargs):

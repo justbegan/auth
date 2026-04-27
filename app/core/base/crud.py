@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from core.services.crud import Base_crud
+from core.services.crud import BaseCrud
 
 
-class Core_crud(ABC):
+class CoreCrud(ABC):
     @property
     @abstractmethod
     def model(cls):
@@ -16,11 +16,11 @@ class Core_crud(ABC):
 
     @classmethod
     def update(cls, data: dict, parameters: dict, context: dict = None):
-        return Base_crud.update(cls.model, cls.serializer, data, parameters, context)
+        return BaseCrud.update(cls.model, cls.serializer, data, parameters, context)
 
     @classmethod
     def get(cls, parameters: dict = {}, context: dict = None):
-        return Base_crud.get(cls.model, cls.serializer, parameters, context)
+        return BaseCrud.get(cls.model, cls.serializer, parameters, context)
 
     @classmethod
     def get_many(
@@ -30,16 +30,16 @@ class Core_crud(ABC):
         custom_obj: dict = None,
         context: dict = None
     ):
-        return Base_crud.get_many(cls.model, cls.serializer, parameters, order, custom_obj, context)
+        return BaseCrud.get_many(cls.model, cls.serializer, parameters, order, custom_obj, context)
 
     @classmethod
     def create(cls, data: dict, context: dict = None):
-        return Base_crud.create(cls.serializer, data, context)
+        return BaseCrud.create(cls.serializer, data, context)
 
     @classmethod
     def delete(cls, parameter: dict):
-        return Base_crud.delete(cls.model, parameter)
+        return BaseCrud.delete(cls.model, parameter)
 
     @classmethod
     def patch(cls, data: dict, parameters: dict, context: dict = None):
-        return Base_crud.patch(cls.model, cls.serializer, data, parameters, context)
+        return BaseCrud.patch(cls.model, cls.serializer, data, parameters, context)

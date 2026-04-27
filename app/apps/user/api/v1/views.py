@@ -4,10 +4,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import Response, APIView, Request
 from drf_spectacular.utils import extend_schema
 
-from apps.user.api.v1.services import User_services
-from apps.user.api.v1.serializers import (User_serializer, Plusofon_serializer)
+from apps.user.api.v1.services import UserServices
+from apps.user.api.v1.serializers import (UserSerializer, PlusofonSerializer)
 from apps.user.models import CustomUser
-from apps.user.filters import Custom_user_filter
+from apps.user.filters import CustomUserFilter
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -26,15 +26,15 @@ class StandardResultsSetPagination(PageNumberPagination):
         })
 
 
-class User_main(generics.ListCreateAPIView):
+class UserMain(generics.ListCreateAPIView):
     """
     Получить всех пользователей
     """
-    serializer_class = User_serializer
+    serializer_class = UserSerializer
     queryset = CustomUser.objects.all().order_by('-id')
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
-    filterset_class = Custom_user_filter
+    filterset_class = CustomUserFilter
 
     def get_queryset(self):
         return super().get_queryset()
@@ -48,21 +48,31 @@ class User_main(generics.ListCreateAPIView):
         Создание нового пользователя
         """
         data = request.data
-        data['is_active'] = False
-        return Response(User_services.create(data))
+        return Response(UserServices.create(data))
+
+
+class UserDetails(generics.RetrieveUpdateAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+
+
+class CurrentUser(APIView):
+    serializer_class = UserSerializer
+
+    def get(self, request: Request):
+        return Response(UserServices.get(parameters={
+            "id": request.user.id
+        }))
 
 
 class Plusofon(APIView):
-    serializer_class = Plusofon_serializer
+    serializer_class = PlusofonSerializer
 
     def post(self, request: Request):
-        data = request.data
-        number_list = data.get('from', [])
-        if len(number_list) == 0:
-            return Response({"ok": False})
-
-        number = number_list[0]
-        verify = User_services.plusofon_verify(number)
+        number = request.POST.get("from")
+        if not number:
+            return Response({"ok": False}, status=500)
+        verify = UserServices.plusofon_verify(number)
         if not verify:
-            return Response({"ok": False})
+            return Response({"ok": False}, status=500)
         return Response({"ok": True})

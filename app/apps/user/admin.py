@@ -7,11 +7,11 @@ from django.contrib.auth.admin import UserAdmin
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin, SimpleHistoryAdmin):
-    search_fields = ("username", "first_name", "last_name", "email", "phone")
+    search_fields = ("first_name", "last_name", "email", "phone")
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
+        (None, {"fields": ("username", "email", "password")}),
         ("Персональная информация", {"fields": (
-            "username", "first_name", "last_name", "patronymic"
+            "first_name", "last_name", "patronymic"
         )}),
         ("Рабочие данные", {"fields": ("last_activity", "phone", "role")}),
         ("Права доступа", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
@@ -27,6 +27,7 @@ class CustomUserAdmin(UserAdmin, SimpleHistoryAdmin):
             ),
         }),
     )
+    list_display = ('id', 'email', 'first_name', 'last_name', 'patronymic', 'is_staff', 'is_active', 'phone')
 
 
 @admin.register(Role)

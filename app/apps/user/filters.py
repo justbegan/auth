@@ -3,13 +3,13 @@ import django_filters
 from .models import CustomUser
 
 
-class Custom_user_filter(django_filters.FilterSet):
+class CustomUserFilter(django_filters.FilterSet):
     id = django_filters.CharFilter(method='filter_id')
     is_active = django_filters.NumberFilter(
         method='filter_is_active',
         label="Фильтрация по статусу активности (2 = все, 1 = активен, 0 = неактивен)",
     )
-    role = django_filters.CharFilter(method='filter_role')
+    role = django_filters.CharFilter(method='filter_role', label="id роли")
 
     class Meta:
         model = CustomUser
@@ -28,4 +28,4 @@ class Custom_user_filter(django_filters.FilterSet):
             return queryset
 
     def filter_role(self, queryset, name, value: str):
-        return queryset.filter(profile__role__id=value)
+        return queryset.filter(role__id=value)
