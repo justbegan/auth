@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'simple_history',
     'core',
     # Пользовательские приложения
+    'apps.profile',
     'apps.user',
 ]
 

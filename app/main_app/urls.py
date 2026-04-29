@@ -13,6 +13,7 @@ START_SYMBOL = ''
 urlpatterns = [
     path(f'{START_SYMBOL}admin/', admin.site.urls),
     # Пользовательские роуты
+    path(f'{START_SYMBOL}profile/v1/', include('apps.profile.api.v1.urls')),
     path(f'{START_SYMBOL}auth/v1/', include('apps.auth.api.v1.urls')),
     path(f'{START_SYMBOL}user/v1/', include('apps.user.api.v1.urls')),
     path("openapi.json", SpectacularJSONAPIView.as_view(), name="schema"),

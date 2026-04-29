@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from simple_history.admin import SimpleHistoryAdmin
-from .models import CustomUser, Role
+from .models import CustomUser
 from django.contrib.auth.admin import UserAdmin
 
 
@@ -11,9 +11,9 @@ class CustomUserAdmin(UserAdmin, SimpleHistoryAdmin):
     fieldsets = (
         (None, {"fields": ("username", "email", "password")}),
         ("Персональная информация", {"fields": (
-            "first_name", "last_name", "patronymic"
+            "first_name", "last_name"
         )}),
-        ("Рабочие данные", {"fields": ("last_activity", "phone", "role")}),
+        ("Рабочие данные", {"fields": ("last_activity", "phone", "account_type", "status")}),
         ("Права доступа", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Важные даты", {"fields": ("last_login", "date_joined")}),
     )
@@ -23,13 +23,8 @@ class CustomUserAdmin(UserAdmin, SimpleHistoryAdmin):
             "classes": ("wide",),
             "fields": (
                 "email", "password1", "password2", "first_name", "last_name",
-                "patronymic", "is_staff", "is_active", "phone",
+                "is_staff", "is_active", "phone",
             ),
         }),
     )
-    list_display = ('id', 'email', 'first_name', 'last_name', 'patronymic', 'is_staff', 'is_active', 'phone')
-
-
-@admin.register(Role)
-class RoleAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_active', 'phone')
