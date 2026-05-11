@@ -1,6 +1,24 @@
-FROM python:3.11-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
+
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources; fi; \
+    if [ -f /etc/apt/sources.list ]; then sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list; fi; \
+    apt-get update -o Acquire::Retries=5; \
+    apt-get install -y --no-install-recommends --fix-missing -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
+        binutils \
+        gdal-bin \
+        libgdal-dev \
+        libgeos-dev \
+        libproj-dev \
+    || (apt-get -f install -y && apt-get update -o Acquire::Retries=5 && apt-get install -y --no-install-recommends --fix-missing -o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
+        binutils \
+        gdal-bin \
+        libgdal-dev \
+        libgeos-dev \
+        libproj-dev); \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
@@ -15,4 +33,4 @@ EXPOSE 8000
 
 RUN chmod +x ./start.sh
 
-CMD ["sh", "./start.sh"]
+CMD ["sh", "-c", "sed -i 's/\\r$//' ./start.sh && exec sh ./start.sh"]

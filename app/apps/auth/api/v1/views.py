@@ -8,7 +8,8 @@ from .serializers import TokenResponseSerializer, CustomTokenSerializer
 @extend_schema(
     methods=["POST"],
     summary="Получить jwt токен",
-    responses={200: TokenResponseSerializer}
+    responses={200: TokenResponseSerializer},
+    tags=['Auth'],
 )
 class GetToken(TokenObtainPairView):
     serializer_class = CustomTokenSerializer

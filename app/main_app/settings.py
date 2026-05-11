@@ -8,11 +8,28 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
 SECRET_KEY = os.environ.get('SECRET_KEY')
+GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
+GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
+PROJ_LIB = os.environ.get('PROJ_LIB') or os.environ.get('PROJ_DATA')
+GDAL_DATA = os.environ.get('GDAL_DATA')
+if PROJ_LIB:
+    os.environ['PROJ_LIB'] = PROJ_LIB
+    os.environ['PROJ_DATA'] = PROJ_LIB
+if GDAL_DATA:
+    os.environ['GDAL_DATA'] = GDAL_DATA
 # Если любой символ появиться в env файле то True
 # Например DEBUG=False - Это True
 # На проде всегда False
-DEBUG = os.environ.get('DEBUG', False)
+DEBUG = env_bool('DEBUG', False)
 origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = origins.split(',') if origins else []
 # Важно! на проде добавить ссылку
@@ -21,7 +38,7 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    CORS_ALLOWED_ORIGINS = [origin for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',') if origin]
 
     SECURE_SSL_REDIRECT = not DEBUG
     SECURE_HSTS_SECONDS = 31536000
@@ -36,14 +53,18 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.gis',
+    'django.contrib.postgres',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'drf_spectacular',
     'django_filters',
     'rest_framework',
     'djoser',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_dump_load_utf8',
     'codemirror2',
@@ -52,7 +73,12 @@ INSTALLED_APPS = [
     'core',
     # Пользовательские приложения
     'apps.profile',
+    'apps.auth',
     'apps.user',
+    'apps.admin_panel',
+    'apps.business',
+    'apps.city',
+    'apps.board',
 ]
 
 MIDDLEWARE = [
@@ -89,6 +115,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'main_app.wsgi.application'
+ASGI_APPLICATION = 'main_app.asgi.application'
 
 
 # Database
@@ -96,7 +123,7 @@ WSGI_APPLICATION = 'main_app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': os.environ.get('POSTGRES_DB'),
         'USER': os.environ.get('POSTGRES_USER'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
@@ -195,6 +222,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'core.base.pagination.DataPagination',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 20
@@ -209,6 +239,41 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get("REFRESH_TOKEN_LIFETIME", "7"))),
 }
 
+PLUSOFON_WEBHOOK_TOKEN = os.environ.get('PLUSOFON_WEBHOOK_TOKEN', '')
+
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/1')
+REDIS_CHANNELS_URL = os.environ.get('REDIS_CHANNELS_URL', 'redis://redis:6379/2')
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
+CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', False)
+CELERY_TIMEZONE = TIME_ZONE
+
+CACHES = {
+    'default': {
+        'BACKEND': os.environ.get('CACHE_BACKEND', 'django_redis.cache.RedisCache'),
+        'LOCATION': os.environ.get('CACHE_LOCATION', REDIS_URL),
+        'TIMEOUT': int(os.environ.get('CACHE_TIMEOUT', '300')),
+        'KEY_PREFIX': os.environ.get('CACHE_KEY_PREFIX', 'django_template'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+    }
+}
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_CHANNELS_URL],
+        },
+    },
+}
+
+OPENSEARCH_URL = os.environ.get('OPENSEARCH_URL', 'http://opensearch:9200')
+OPENSEARCH_INDEX_BUSINESSES = os.environ.get('OPENSEARCH_INDEX_BUSINESSES', 'businesses')
+OPENSEARCH_INDEX_PRODUCTS = os.environ.get('OPENSEARCH_INDEX_PRODUCTS', 'products')
+OPENSEARCH_INDEX_BOARD = os.environ.get('OPENSEARCH_INDEX_BOARD', 'board_listings')
+
 SPECTACULAR_SERVERS = os.environ.get('SPECTACULAR_SERVERS', '').split(',')
 
 SPECTACULAR_SETTINGS = {
@@ -219,4 +284,69 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
     'SECURITY': [{'BearerAuth': []}],
     "SERVERS": [{"url": url} for url in SPECTACULAR_SERVERS],
+    'ENUM_NAME_OVERRIDES': {
+        'UserStatusEnum': [
+            ('active', 'Активен'),
+            ('blocked', 'Заблокирован'),
+            ('deleted', 'Удален'),
+        ],
+        'BusinessStatusEnum': [
+            ('draft', 'Черновик'),
+            ('pending', 'На модерации'),
+            ('active', 'Активен'),
+            ('rejected', 'Отклонен'),
+            ('blocked', 'Заблокирован'),
+        ],
+        'ModerationStatusEnum': [
+            ('pending', 'На рассмотрении'),
+            ('approved', 'Одобрено'),
+            ('rejected', 'Отклонено'),
+        ],
+        'ReportStatusEnum': [
+            ('pending', 'Новая'),
+            ('resolved', 'Решена'),
+            ('rejected', 'Отклонена'),
+        ],
+        'AdCampaignStatusEnum': [
+            ('draft', 'Черновик'),
+            ('active', 'Активна'),
+            ('paused', 'На паузе'),
+            ('finished', 'Завершена'),
+        ],
+        'ProductImportStatusEnum': [
+            ('queued', 'В очереди'),
+            ('processing', 'В обработке'),
+            ('done', 'Готово'),
+            ('failed', 'Ошибка'),
+        ],
+        'OrderStatusEnum': [
+            ('created', 'Создан'),
+            ('confirmed', 'Подтвержден'),
+            ('working', 'В работе'),
+            ('ready', 'Готов'),
+            ('delivering', 'Доставляется'),
+            ('completed', 'Завершен'),
+            ('cancelled', 'Отменен'),
+        ],
+        'PublicationStatusEnum': [
+            ('published', 'Опубликован'),
+            ('hidden', 'Скрыт'),
+            ('deleted', 'Удален'),
+            ('pending', 'На модерации'),
+        ],
+        'StoryStatusEnum': [
+            ('active', 'Активна'),
+            ('hidden', 'Скрыта'),
+            ('expired', 'Истекла'),
+        ],
+        'BoardListingStatusEnum': [
+            ('draft', 'Черновик'),
+            ('review', 'На модерации'),
+            ('active', 'Активно'),
+            ('paused', 'На паузе'),
+            ('sold', 'Продано'),
+            ('rejected', 'Отклонено'),
+            ('deleted', 'Удалено'),
+        ],
+    },
 }

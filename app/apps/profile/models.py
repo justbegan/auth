@@ -1,10 +1,13 @@
 import uuid
-from django.db import models
+from decimal import Decimal
+
+from django.contrib.gis.db import models
+from django.contrib.postgres.indexes import GistIndex
 from apps.user.models import CustomUser
 
 
 class MediaFile(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField("ID файла", primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(CustomUser, verbose_name="Владелец", on_delete=models.SET_NULL, blank=True, null=True)
     bucket = models.CharField("S3 bucket", max_length=120)
     object_key = models.TextField("S3 key")
@@ -19,6 +22,13 @@ class MediaFile(models.Model):
     class Meta:
         verbose_name = 'Файл'
         verbose_name_plural = 'Файлы'
+        indexes = [
+            models.Index(fields=['owner', 'status']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return self.object_key
 
 
 class City(models.Model):
@@ -27,14 +37,33 @@ class City(models.Model):
     name = models.CharField("Название", max_length=160)
     region = models.CharField("Регион", max_length=160, blank=True, null=True)
     timezone = models.CharField("Таймзона", max_length=64)
-    lat = models.DecimalField("Центр карты (широта)", max_digits=9, decimal_places=6, blank=True, null=True)
-    lng = models.DecimalField("Центр карты (долгота)", max_digits=9, decimal_places=6, blank=True, null=True)
+    point = models.PointField("Центр карты", srid=4326, blank=True, null=True)
     is_active = models.BooleanField("Доступность города", default=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
 
     class Meta:
         verbose_name = 'Город'
         verbose_name_plural = 'Города'
+        indexes = [
+            models.Index(fields=['slug']),
+            models.Index(fields=['is_active']),
+            GistIndex(fields=['point']),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def lat(self):
+        if not self.point:
+            return None
+        return Decimal(str(self.point.y))
+
+    @property
+    def lng(self):
+        if not self.point:
+            return None
+        return Decimal(str(self.point.x))
 
 
 class UserProfile(models.Model):
@@ -49,9 +78,12 @@ class UserProfile(models.Model):
         verbose_name = 'Профиль'
         verbose_name_plural = 'Профили'
 
+    def __str__(self):
+        return str(self.user)
+
 
 class Notification(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField("ID уведомления", primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="notifications",
                              verbose_name="Получатель")
     type = models.CharField("Тип события", max_length=64)
@@ -65,10 +97,17 @@ class Notification(models.Model):
     class Meta:
         verbose_name = 'Уведомление'
         verbose_name_plural = 'Уведомления'
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['type']),
+        ]
+
+    def __str__(self):
+        return self.title
 
 
 class AuditLog(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField("ID события", primary_key=True, default=uuid.uuid4, editable=False)
     actor_user = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, blank=True, null=True,
         related_name="audit_logs", verbose_name="Кто совершил действие"
@@ -84,3 +123,11 @@ class AuditLog(models.Model):
     class Meta:
         verbose_name = 'Лог'
         verbose_name_plural = 'Логи'
+        indexes = [
+            models.Index(fields=['actor_user', 'created_at']),
+            models.Index(fields=['entity_type', 'entity_id']),
+            models.Index(fields=['action']),
+        ]
+
+    def __str__(self):
+        return f'{self.action}: {self.entity_type}'

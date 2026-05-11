@@ -1,7 +1,11 @@
+import hmac
+
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import Response, APIView, Request
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.conf import settings
 from drf_spectacular.utils import extend_schema
 
 from apps.user.api.v1.services import UserServices
@@ -26,6 +30,7 @@ class StandardResultsSetPagination(PageNumberPagination):
         })
 
 
+@extend_schema(tags=['Users'])
 class UserMain(generics.ListCreateAPIView):
     """
     Получить всех пользователей
@@ -35,6 +40,12 @@ class UserMain(generics.ListCreateAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomUserFilter
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [AllowAny()]
+        return super().get_permissions()
 
     def get_queryset(self):
         return super().get_queryset()
@@ -42,22 +53,33 @@ class UserMain(generics.ListCreateAPIView):
     @extend_schema(
         methods=["POST"],
         summary="Регистрация нового пользователя",
+        tags=['Users'],
     )
     def post(self, request, *args, **kwargs):
         """
         Создание нового пользователя
         """
         data = request.data
-        return Response(UserServices.create(data))
+        return Response(UserServices.create(data, context={'request': request}))
 
 
+@extend_schema(tags=['Users'])
 class UserDetails(generics.RetrieveUpdateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or getattr(user, 'account_type', None) == 'admin':
+            return super().get_queryset()
+        return super().get_queryset().filter(id=user.id)
 
 
+@extend_schema(tags=['Users'])
 class CurrentUser(APIView):
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
 
     def get(self, request: Request):
         return Response(UserServices.get(parameters={
@@ -65,10 +87,16 @@ class CurrentUser(APIView):
         }))
 
 
+@extend_schema(tags=['Users: Phone Verification'])
 class Plusofon(APIView):
     serializer_class = PlusofonSerializer
+    permission_classes = [AllowAny]
 
     def post(self, request: Request):
+        provided_token = request.headers.get("X-Plusofon-Token", "")
+        expected_token = settings.PLUSOFON_WEBHOOK_TOKEN
+        if not expected_token or not hmac.compare_digest(provided_token, expected_token):
+            return Response({"ok": False}, status=403)
         number = request.POST.get("from")
         if not number:
             return Response({"ok": False}, status=500)

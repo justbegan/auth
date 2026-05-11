@@ -1,8 +1,10 @@
 ## Требования
-Перед началом работы убедитесь, что у вас установлены следующие зависимости:  
-- Python 3.11+  
-- Django 5.1+  
-- PostgreSQL 16  
+Перед началом работы убедитесь, что у вас установлены следующие зависимости:
+- Python 3.12+
+- Django 6+
+- PostgreSQL 16 + PostGIS
+- Redis 7+
+- OpenSearch 2+
 
 
 ## Установка
@@ -34,14 +36,35 @@
 
 
 ## Использование
-Swagger(Доступен только в debug режиме):  
-    http://127.0.0.1:8000/api/docs  
+Swagger (доступен только в debug режиме):
+    http://127.0.0.1:8000/docs
 
-Админ панель:  
-    http://127.0.0.1:8000/api/admin  
+Админ панель:
+    http://127.0.0.1:8000/admin
+
+Health checks:
+    http://127.0.0.1:8000/health/
+    http://127.0.0.1:8000/ready/
 
 ## Тестирование
 python manage.py test apps  
+
+## Инфраструктура (docker-compose)
+- `web` — Django ASGI (Uvicorn)
+- `nginx` — reverse proxy
+- `db` — PostgreSQL/PostGIS
+- `redis` — cache/broker
+- `celery_worker` — фоновые задачи
+- `celery_beat` — планировщик задач
+- `opensearch` — поиск
+
+## WebSocket (City chat)
+- Endpoint: `ws://<host>/ws/{city_slug}/chat/{conversation_id}/?token=<access_token>`
+- Токен: JWT access token (тот же, что используется в REST).
+- Payload для отправки:
+  - `{"body": "text message"}`
+  - или `{"body": "text with media", "media": "<media_uuid>"}`
+- Формат входящего события от WS выровнен с REST `POST /api/v1/{city_slug}/city/chat/{id}/messages/` (поля `id`, `conversation`, `sender`, `body`, `media`, `created_at`, и т.д.).
 
 
 ## Структура проекта
@@ -82,3 +105,16 @@ project/
 Используется библиотека flake8(добавлен в requirements.txt)  
 конфиг файл .flake8  
 запуск ./flake8  
+
+## PostGIS
+Если запуск через Docker, используется образ `postgis/postgis:16-3.4` из `docker-compose.yml`.
+
+Для существующей БД убедитесь, что расширение включено:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
+
+Если запускаете проект локально на Windows (без Docker) и Django не видит GIS-библиотеки, задайте в `.env`:
+- `GDAL_LIBRARY_PATH`
+- `GEOS_LIBRARY_PATH`
