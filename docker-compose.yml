@@ -109,9 +109,12 @@ services:
 
   opensearch:
     image: opensearchproject/opensearch:2.19.1
+    env_file:
+      - app/.env
     environment:
       discovery.type: single-node
-      plugins.security.disabled: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
       OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
     expose:
       - "9200"

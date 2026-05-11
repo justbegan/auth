@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Case, IntegerField, When
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -31,6 +32,7 @@ from apps.city.filters import (
 from apps.city.models import AIRequest, ChatConversation, FeedPost, FeedReaction
 from apps.profile.models import City
 from apps.user.api.v1.serializers import UserSerializer
+from core.opensearch import search_business_ids
 from core.permissions import IsAuthenticatedOrReadOnlyForCity
 
 
@@ -117,7 +119,27 @@ class CitySearchView(CityMixin, generics.ListAPIView):
     def get_queryset(self):
         if self.is_schema_generation():
             return Business.objects.none()
-        return Business.objects.filter(city=self.get_city(), status=Business.Status.ACTIVE).distinct()
+        city = self.get_city()
+        base_queryset = Business.objects.filter(city=city, status=Business.Status.ACTIVE).distinct()
+        ids = search_business_ids(
+            city_id=city.id,
+            q=self.request.query_params.get('q'),
+            category_id=self.request.query_params.get('category'),
+            rating_min=self.request.query_params.get('rating_min'),
+            price_min=self.request.query_params.get('price_min'),
+            price_max=self.request.query_params.get('price_max'),
+        )
+        if ids is None:
+            # OpenSearch недоступен: безопасный fallback на PostgreSQL.
+            return base_queryset
+        if not ids:
+            return Business.objects.none()
+
+        ordering = Case(
+            *[When(id=item_id, then=position) for position, item_id in enumerate(ids)],
+            output_field=IntegerField(),
+        )
+        return base_queryset.filter(id__in=ids).order_by(ordering)
 
 
 @extend_schema(

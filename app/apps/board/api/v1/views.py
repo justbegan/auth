@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Case, IntegerField, When
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, mixins, status, viewsets
@@ -16,6 +17,7 @@ from apps.city.api.v1.serializers import ChatConversationSerializer, ChatMessage
 from apps.city.filters import ChatConversationFilter
 from apps.city.models import ChatConversation
 from apps.profile.models import City
+from core.opensearch import search_board_listing_ids
 
 
 class BoardCityMixin:
@@ -26,6 +28,12 @@ class BoardCityMixin:
 
     def is_schema_generation(self):
         return getattr(self, 'swagger_fake_view', False)
+
+    @staticmethod
+    def parse_bool_query_param(value):
+        if value is None:
+            return None
+        return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
 @extend_schema(
@@ -75,11 +83,34 @@ class BoardCatalogView(BoardCityMixin, generics.ListAPIView):
     def get_queryset(self):
         if self.is_schema_generation():
             return BoardListing.objects.none()
-        queryset = BoardListing.objects.filter(city=self.get_city(), status=BoardListing.Status.ACTIVE)
+        city = self.get_city()
+        queryset = BoardListing.objects.filter(city=city, status=BoardListing.Status.ACTIVE)
         category_slug = self.kwargs.get('category')
         if category_slug:
             queryset = queryset.filter(category__slug=category_slug)
-        return queryset.order_by('-boosted_until', '-created_at')
+        ids = search_board_listing_ids(
+            city_id=city.id,
+            q=self.request.query_params.get('q'),
+            category_slug=category_slug,
+            category_id=self.request.query_params.get('category'),
+            subcategory_id=self.request.query_params.get('subcategory'),
+            price_min=self.request.query_params.get('price_min'),
+            price_max=self.request.query_params.get('price_max'),
+            condition=self.request.query_params.get('condition'),
+            seller_type=self.request.query_params.get('seller_type'),
+            district=self.request.query_params.get('district'),
+            negotiable=self.parse_bool_query_param(self.request.query_params.get('negotiable')),
+        )
+        if ids is None:
+            return queryset.order_by('-boosted_until', '-created_at')
+        if not ids:
+            return BoardListing.objects.none()
+
+        ordering = Case(
+            *[When(id=item_id, then=position) for position, item_id in enumerate(ids)],
+            output_field=IntegerField(),
+        )
+        return queryset.filter(id__in=ids).order_by(ordering)
 
 
 @extend_schema(
