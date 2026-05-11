@@ -30,7 +30,11 @@ class StandardResultsSetPagination(PageNumberPagination):
         })
 
 
-@extend_schema(tags=['Users'])
+@extend_schema(
+    tags=['Users'],
+    summary='Список и регистрация пользователей',
+    description='GET: список пользователей (требуется авторизация). POST: регистрация нового пользователя.',
+)
 class UserMain(generics.ListCreateAPIView):
     """
     Получить всех пользователей
@@ -53,6 +57,7 @@ class UserMain(generics.ListCreateAPIView):
     @extend_schema(
         methods=["POST"],
         summary="Регистрация нового пользователя",
+        description="Создает нового пользователя. Для публичной регистрации доступен без авторизации.",
         tags=['Users'],
     )
     def post(self, request, *args, **kwargs):
@@ -63,7 +68,11 @@ class UserMain(generics.ListCreateAPIView):
         return Response(UserServices.create(data, context={'request': request}))
 
 
-@extend_schema(tags=['Users'])
+@extend_schema(
+    tags=['Users'],
+    summary='Детали пользователя',
+    description='Получение и обновление профиля пользователя. Для обычного пользователя доступно только свое.',
+)
 class UserDetails(generics.RetrieveUpdateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -76,7 +85,11 @@ class UserDetails(generics.RetrieveUpdateAPIView):
         return super().get_queryset().filter(id=user.id)
 
 
-@extend_schema(tags=['Users'])
+@extend_schema(
+    tags=['Users'],
+    summary='Текущий пользователь',
+    description='Возвращает данные текущего авторизованного пользователя.',
+)
 class CurrentUser(APIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
@@ -87,7 +100,11 @@ class CurrentUser(APIView):
         }))
 
 
-@extend_schema(tags=['Users: Phone Verification'])
+@extend_schema(
+    tags=['Users: Phone Verification'],
+    summary='Webhook подтверждения телефона',
+    description='Принимает callback от Plusofon и подтверждает пользователя по номеру телефона.',
+)
 class Plusofon(APIView):
     serializer_class = PlusofonSerializer
     permission_classes = [AllowAny]

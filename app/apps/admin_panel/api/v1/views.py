@@ -33,13 +33,21 @@ from apps.user.models import CustomUser
 from core.permissions import IsAdminAccount
 
 
-@extend_schema(tags=['Admin Panel'])
+@extend_schema(
+    tags=['Admin Panel'],
+    summary='Базовый CRUD админ-панели',
+    description='Базовый класс для CRUD-операций админ-панели.',
+)
 class AdminBaseViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminAccount]
     filter_backends = [DjangoFilterBackend]
 
 
-@extend_schema(tags=['Admin Panel: Statistics'])
+@extend_schema(
+    tags=['Admin Panel: Statistics'],
+    summary='Статистика платформы',
+    description='Список агрегированной дневной статистики админ-панели.',
+)
 class AdminStatsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = AdminStatsDaily.objects.all().order_by('-day')
     serializer_class = AdminStatsDailySerializer
@@ -48,7 +56,11 @@ class AdminStatsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     filterset_class = AdminStatsDailyFilter
 
 
-@extend_schema(tags=['Admin Panel: Businesses'])
+@extend_schema(
+    tags=['Admin Panel: Businesses'],
+    summary='Бизнесы на модерации',
+    description='Просмотр бизнесов и модерационные действия: approve/reject.',
+)
 class AdminBusinessViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = Business.objects.select_related('owner', 'city', 'category').all().order_by('-created_at')
     serializer_class = BusinessSerializer
@@ -88,7 +100,11 @@ class AdminBusinessViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vie
         return Response(self.get_serializer(business).data)
 
 
-@extend_schema(tags=['Admin Panel: Reviews'])
+@extend_schema(
+    tags=['Admin Panel: Reviews'],
+    summary='Отзывы',
+    description='Просмотр отзывов и модерационные действия над ними.',
+)
 class AdminReviewViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Review.objects.select_related('business', 'user').all().order_by('-created_at')
     serializer_class = ReviewSerializer
@@ -111,7 +127,11 @@ class AdminReviewViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response(self.get_serializer(review).data)
 
 
-@extend_schema(tags=['Admin Panel: Reports'])
+@extend_schema(
+    tags=['Admin Panel: Reports'],
+    summary='Жалобы на отзывы',
+    description='Просмотр и обработка жалоб на отзывы.',
+)
 class ReviewReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ReviewReport.objects.select_related('review', 'reporter').all().order_by('-created_at')
     serializer_class = ReviewReportSerializer
@@ -129,7 +149,11 @@ class ReviewReportViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         return Response(self.get_serializer(report).data)
 
 
-@extend_schema(tags=['Admin Panel: Categories'])
+@extend_schema(
+    tags=['Admin Panel: Categories'],
+    summary='Категории',
+    description='Управление категориями платформы в админ-панели.',
+)
 class CategoryViewSet(AdminBaseViewSet):
     queryset = Category.objects.all().order_by('section', 'sort_order', 'name')
     serializer_class = CategorySerializer
@@ -142,7 +166,11 @@ class CategoryViewSet(AdminBaseViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=['Admin Panel: Users'])
+@extend_schema(
+    tags=['Admin Panel: Users'],
+    summary='Пользователи',
+    description='Просмотр пользователей и действия блокировки/разблокировки.',
+)
 class AdminUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = CustomUser.objects.all().order_by('-created_at')
     serializer_class = UserSerializer
@@ -167,14 +195,22 @@ class AdminUserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
         return Response(self.get_serializer(user).data)
 
 
-@extend_schema(tags=['Admin Panel: Advertising'])
+@extend_schema(
+    tags=['Admin Panel: Advertising'],
+    summary='Рекламные кампании',
+    description='Управление рекламными кампаниями.',
+)
 class AdCampaignViewSet(AdminBaseViewSet):
     queryset = AdCampaign.objects.select_related('business', 'city').all().order_by('-created_at')
     serializer_class = AdCampaignSerializer
     filterset_class = AdCampaignFilter
 
 
-@extend_schema(tags=['Admin Panel: Tariffs'])
+@extend_schema(
+    tags=['Admin Panel: Tariffs'],
+    summary='Тарифы',
+    description='Управление тарифами и их архивация.',
+)
 class TariffViewSet(AdminBaseViewSet):
     queryset = Tariff.objects.all().order_by('target', 'price_month')
     serializer_class = TariffSerializer

@@ -18,7 +18,11 @@ from apps.profile.models import AuditLog, MediaFile, Notification, UserProfile
 from core.permissions import IsAdminAccount
 
 
-@extend_schema(tags=['Profile'])
+@extend_schema(
+    tags=['Profile'],
+    summary='Профиль текущего пользователя',
+    description='Получение и обновление персонального профиля текущего пользователя.',
+)
 class ProfileMeView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -40,7 +44,11 @@ class ProfileMeView(generics.RetrieveUpdateAPIView):
         )
 
 
-@extend_schema(tags=['Profile: Media'])
+@extend_schema(
+    tags=['Profile: Media'],
+    summary='Медиафайлы профиля',
+    description='Загрузка и управление медиафайлами, принадлежащими пользователю.',
+)
 class MediaFileViewSet(viewsets.ModelViewSet):
     serializer_class = MediaFileSerializer
     permission_classes = [IsAuthenticated]
@@ -62,7 +70,11 @@ class MediaFileViewSet(viewsets.ModelViewSet):
         )
 
 
-@extend_schema(tags=['Profile: Notifications'])
+@extend_schema(
+    tags=['Profile: Notifications'],
+    summary='Уведомления пользователя',
+    description='Просмотр уведомлений и отметка уведомлений как прочитанных.',
+)
 class NotificationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
@@ -86,7 +98,11 @@ class NotificationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         return Response({'updated': updated}, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=['Profile: Audit'])
+@extend_schema(
+    tags=['Profile: Audit'],
+    summary='Журнал аудита',
+    description='Просмотр логов аудита. Доступно только администраторам.',
+)
 class AuditLogViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = AuditLogSerializer
     permission_classes = [IsAdminAccount]
@@ -97,7 +113,11 @@ class AuditLogViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets
         return AuditLog.objects.all().order_by('-created_at')
 
 
-@extend_schema(tags=['Profile'])
+@extend_schema(
+    tags=['Profile'],
+    summary='Краткая информация профиля',
+    description='Возвращает профиль текущего пользователя в упрощенном формате.',
+)
 class ProfileMain(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer

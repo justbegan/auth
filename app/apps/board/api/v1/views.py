@@ -28,7 +28,11 @@ class BoardCityMixin:
         return getattr(self, 'swagger_fake_view', False)
 
 
-@extend_schema(tags=['Board: Home'])
+@extend_schema(
+    tags=['Board: Home'],
+    summary='Главная страница доски объявлений',
+    description='Возвращает категории и последние активные объявления выбранного города.',
+)
 class BoardHomeView(BoardCityMixin, APIView):
     permission_classes = [AllowAny]
     serializer_class = BoardListingSerializer
@@ -44,7 +48,11 @@ class BoardHomeView(BoardCityMixin, APIView):
         })
 
 
-@extend_schema(tags=['Board: Categories'])
+@extend_schema(
+    tags=['Board: Categories'],
+    summary='Список категорий доски',
+    description='Возвращает дерево категорий раздела доски объявлений.',
+)
 class BoardCategoryListView(BoardCityMixin, generics.ListAPIView):
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
@@ -54,7 +62,11 @@ class BoardCategoryListView(BoardCityMixin, generics.ListAPIView):
         return Category.objects.filter(section=Category.Section.BOARD).order_by('sort_order', 'name')
 
 
-@extend_schema(tags=['Board: Catalog'])
+@extend_schema(
+    tags=['Board: Catalog'],
+    summary='Каталог объявлений',
+    description='Список объявлений по городу с поддержкой фильтров и категории.',
+)
 class BoardCatalogView(BoardCityMixin, generics.ListAPIView):
     serializer_class = BoardListingSerializer
     permission_classes = [AllowAny]
@@ -70,7 +82,11 @@ class BoardCatalogView(BoardCityMixin, generics.ListAPIView):
         return queryset.order_by('-boosted_until', '-created_at')
 
 
-@extend_schema(tags=['Board: Listing'])
+@extend_schema(
+    tags=['Board: Listing'],
+    summary='Карточка объявления',
+    description='Возвращает детальную информацию по объявлению.',
+)
 class BoardItemView(BoardCityMixin, generics.RetrieveAPIView):
     serializer_class = BoardListingSerializer
     permission_classes = [AllowAny]
@@ -82,7 +98,11 @@ class BoardItemView(BoardCityMixin, generics.RetrieveAPIView):
         return BoardListing.objects.filter(city=self.get_city()).exclude(status=BoardListing.Status.DELETED)
 
 
-@extend_schema(tags=['Board: Listing'])
+@extend_schema(
+    tags=['Board: Listing'],
+    summary='Переключить избранное объявления',
+    description='Добавляет или удаляет объявление из избранного текущего пользователя.',
+)
 class BoardItemFavoriteView(BoardCityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BoardFavoriteSerializer
@@ -97,7 +117,11 @@ class BoardItemFavoriteView(BoardCityMixin, APIView):
         return Response({'favorite': created})
 
 
-@extend_schema(tags=['Board: Listing'])
+@extend_schema(
+    tags=['Board: Listing'],
+    summary='Запрос контактов продавца',
+    description='Увеличивает счетчик обращений по объявлению.',
+)
 class BoardItemContactView(BoardCityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BoardListingSerializer
@@ -109,7 +133,11 @@ class BoardItemContactView(BoardCityMixin, APIView):
         return Response({'listing_id': listing.id, 'contacts_count': listing.contacts_count})
 
 
-@extend_schema(tags=['Board: Listing'])
+@extend_schema(
+    tags=['Board: Listing'],
+    summary='Пожаловаться на объявление',
+    description='Создает жалобу на выбранное объявление.',
+)
 class BoardItemReportView(BoardCityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BoardReportSerializer
@@ -122,7 +150,11 @@ class BoardItemReportView(BoardCityMixin, APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=['Board: My Listings'])
+@extend_schema(
+    tags=['Board: My Listings'],
+    summary='Мои объявления',
+    description='CRUD для объявлений текущего пользователя в выбранном городе.',
+)
 class MyBoardListingViewSet(BoardCityMixin, viewsets.ModelViewSet):
     serializer_class = BoardListingSerializer
     permission_classes = [IsAuthenticated]
@@ -176,7 +208,11 @@ class MyBoardListingViewSet(BoardCityMixin, viewsets.ModelViewSet):
         return Response(self.get_serializer(listing).data)
 
 
-@extend_schema(tags=['Board: Favorites'])
+@extend_schema(
+    tags=['Board: Favorites'],
+    summary='Избранные объявления',
+    description='Просмотр и удаление избранных объявлений пользователя.',
+)
 class BoardFavoriteViewSet(BoardCityMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     serializer_class = BoardFavoriteSerializer
     permission_classes = [IsAuthenticated]
@@ -193,7 +229,11 @@ class BoardFavoriteViewSet(BoardCityMixin, mixins.ListModelMixin, mixins.Destroy
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=['Board: Favorites'])
+@extend_schema(
+    tags=['Board: Favorites'],
+    summary='Добавить/удалить объявление из избранного',
+    description='Явные endpoint’ы для добавления и удаления избранного по listing_id.',
+)
 class BoardFavoriteAddView(BoardCityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BoardFavoriteSerializer
@@ -213,7 +253,11 @@ class BoardFavoriteAddView(BoardCityMixin, APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=['Board: Chats'])
+@extend_schema(
+    tags=['Board: Chats'],
+    summary='Чаты по объявлениям',
+    description='Список чатов по доске объявлений и отправка сообщений в чат.',
+)
 class BoardChatViewSet(BoardCityMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = ChatConversationSerializer
     permission_classes = [IsAuthenticated]
@@ -239,7 +283,11 @@ class BoardChatViewSet(BoardCityMixin, mixins.ListModelMixin, mixins.RetrieveMod
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=['Board: Create'])
+@extend_schema(
+    tags=['Board: Create'],
+    summary='Справочники для создания объявления',
+    description='Возвращает справочные данные для формы создания объявления.',
+)
 class BoardNewReferencesView(BoardCityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CategorySerializer

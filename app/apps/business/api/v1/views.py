@@ -38,7 +38,11 @@ class DashboardQuerysetMixin:
         return Business.objects.filter(owner=self.request.user).first()
 
 
-@extend_schema(tags=['Business Dashboard: Overview'])
+@extend_schema(
+    tags=['Business Dashboard: Overview'],
+    summary='Сводка по бизнесу',
+    description='Возвращает ключевые метрики бизнеса: выручка, заказы, просмотры и последние заказы.',
+)
 class DashboardOverview(APIView):
     permission_classes = [IsBusinessAccount]
     serializer_class = BusinessSerializer
@@ -66,7 +70,11 @@ class DashboardOverview(APIView):
         return Response(payload)
 
 
-@extend_schema(tags=['Business Dashboard: Profile'])
+@extend_schema(
+    tags=['Business Dashboard: Profile'],
+    summary='Профиль бизнеса',
+    description='Просмотр и редактирование карточки бизнеса.',
+)
 class DashboardProfile(generics.RetrieveUpdateAPIView):
     serializer_class = BusinessSerializer
     permission_classes = [IsBusinessAccount]
@@ -83,7 +91,11 @@ class DashboardProfile(generics.RetrieveUpdateAPIView):
         return business
 
 
-@extend_schema(tags=['Business Dashboard: Products'])
+@extend_schema(
+    tags=['Business Dashboard: Products'],
+    summary='Товары бизнеса',
+    description='CRUD товаров бизнеса и импорт товаров из файла.',
+)
 class ProductViewSet(DashboardQuerysetMixin, viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     filterset_class = ProductFilter
@@ -109,7 +121,11 @@ class ProductViewSet(DashboardQuerysetMixin, viewsets.ModelViewSet):
         serializer.save(business=business)
 
 
-@extend_schema(tags=['Business Dashboard: Orders'])
+@extend_schema(
+    tags=['Business Dashboard: Orders'],
+    summary='Заказы бизнеса',
+    description='Просмотр заказов бизнеса, обновление статуса и переход в чат заказа.',
+)
 class DashboardOrderViewSet(DashboardQuerysetMixin, mixins.ListModelMixin,
                             mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = OrderSerializer
@@ -137,7 +153,11 @@ class DashboardOrderViewSet(DashboardQuerysetMixin, mixins.ListModelMixin,
         return Response({'conversation_id': conversation.id if conversation else None})
 
 
-@extend_schema(tags=['Business Dashboard: Analytics'])
+@extend_schema(
+    tags=['Business Dashboard: Analytics'],
+    summary='Аналитика бизнеса',
+    description='Список дневной аналитики по бизнесу.',
+)
 class DashboardAnalyticsViewSet(DashboardQuerysetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = BusinessAnalyticsDailySerializer
     filterset_class = BusinessAnalyticsDailyFilter

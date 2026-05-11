@@ -44,7 +44,11 @@ class CityMixin:
         return getattr(self, 'swagger_fake_view', False)
 
 
-@extend_schema(tags=['City: Map'])
+@extend_schema(
+    tags=['City: Map'],
+    summary='Карта города и список бизнесов',
+    description='Возвращает список активных бизнесов города для отображения на карте.',
+)
 class CityMapView(CityMixin, generics.ListAPIView):
     serializer_class = CityBusinessDetailSerializer
     filterset_class = CityBusinessFilter
@@ -56,7 +60,11 @@ class CityMapView(CityMixin, generics.ListAPIView):
         return Business.objects.filter(city=self.get_city(), status=Business.Status.ACTIVE).order_by('-rating', 'name')
 
 
-@extend_schema(tags=['City: Businesses'])
+@extend_schema(
+    tags=['City: Businesses'],
+    summary='Детальная информация о бизнесе',
+    description='Возвращает карточку активного бизнеса выбранного города.',
+)
 class CityBusinessDetailView(CityMixin, generics.RetrieveAPIView):
     serializer_class = CityBusinessDetailSerializer
     permission_classes = [AllowAny]
@@ -68,7 +76,11 @@ class CityBusinessDetailView(CityMixin, generics.RetrieveAPIView):
         return Business.objects.filter(city=self.get_city(), status=Business.Status.ACTIVE)
 
 
-@extend_schema(tags=['City: Businesses'])
+@extend_schema(
+    tags=['City: Businesses'],
+    summary='Добавить бизнес в избранное',
+    description='Помечает бизнес как избранный для текущего пользователя.',
+)
 class CityBusinessFavoriteView(CityMixin, APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CityBusinessDetailSerializer
@@ -78,7 +90,11 @@ class CityBusinessFavoriteView(CityMixin, APIView):
         return Response({'business_id': business.id, 'favorite': True})
 
 
-@extend_schema(tags=['City: Businesses'])
+@extend_schema(
+    tags=['City: Businesses'],
+    summary='Поделиться бизнесом',
+    description='Фиксирует действие "поделиться" для карточки бизнеса.',
+)
 class CityBusinessShareView(CityMixin, APIView):
     permission_classes = [AllowAny]
     serializer_class = CityBusinessDetailSerializer
@@ -88,7 +104,11 @@ class CityBusinessShareView(CityMixin, APIView):
         return Response({'business_id': business.id, 'shared': True})
 
 
-@extend_schema(tags=['City: Search'])
+@extend_schema(
+    tags=['City: Search'],
+    summary='Поиск по бизнесам города',
+    description='Ищет активные бизнесы по параметрам фильтра в выбранном городе.',
+)
 class CitySearchView(CityMixin, generics.ListAPIView):
     serializer_class = CityBusinessDetailSerializer
     filterset_class = CitySearchFilter
@@ -100,7 +120,11 @@ class CitySearchView(CityMixin, generics.ListAPIView):
         return Business.objects.filter(city=self.get_city(), status=Business.Status.ACTIVE).distinct()
 
 
-@extend_schema(tags=['City: Feed'])
+@extend_schema(
+    tags=['City: Feed'],
+    summary='Лента города',
+    description='CRUD для публикаций городской ленты и связанных действий.',
+)
 class CityFeedViewSet(CityMixin, viewsets.ModelViewSet):
     serializer_class = FeedPostSerializer
     permission_classes = [IsAuthenticatedOrReadOnlyForCity]
@@ -145,7 +169,11 @@ class CityFeedViewSet(CityMixin, viewsets.ModelViewSet):
         return Response(self.get_serializer(post).data)
 
 
-@extend_schema(tags=['City: Orders'])
+@extend_schema(
+    tags=['City: Orders'],
+    summary='Заказы пользователя в городе',
+    description='Просмотр списка и деталей заказов текущего пользователя.',
+)
 class CityOrderViewSet(CityMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = CityOrderSerializer
     permission_classes = [IsAuthenticated]
@@ -177,12 +205,20 @@ class CityOrderViewSet(CityMixin, mixins.ListModelMixin, mixins.RetrieveModelMix
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
+    @extend_schema(
+        summary='Повторить заказ (не рабочее)',
+        description='Заглушка MVP. Черновик повторного заказа пока не создается (не рабочее).',
+    )
     def repeat(self, request, city_slug=None, pk=None):
         order = self.get_object()
         return Response({'source_order_id': order.id, 'detail': 'Repeat order draft is not created in MVP'})
 
 
-@extend_schema(tags=['City: Chats'])
+@extend_schema(
+    tags=['City: Chats'],
+    summary='Чаты города',
+    description='Просмотр чатов пользователя и отправка сообщений в выбранный чат.',
+)
 class CityChatViewSet(CityMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = ChatConversationSerializer
     permission_classes = [IsAuthenticated]
@@ -217,7 +253,11 @@ class CityChatViewSet(CityMixin, mixins.ListModelMixin, mixins.RetrieveModelMixi
         return Response(payload, status=status.HTTP_200_OK)
 
 
-@extend_schema(tags=['City: AI Assistant'])
+@extend_schema(
+    tags=['City: AI Assistant'],
+    summary='AI-запросы города (не рабочее)',
+    description='Временная заглушка MVP: реальная AI-интеграция не подключена (не рабочее).',
+)
 class CityAIViewSet(CityMixin, mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = AIRequestSerializer
     permission_classes = [IsAuthenticated]
@@ -235,7 +275,11 @@ class CityAIViewSet(CityMixin, mixins.CreateModelMixin, mixins.ListModelMixin, v
         )
 
 
-@extend_schema(tags=['City: Auth'])
+@extend_schema(
+    tags=['City: Auth'],
+    summary='Регистрация пользователя города',
+    description='Создает нового пользователя с ролью user в контексте выбранного города.',
+)
 class CityAuthRegisterView(APIView):
     permission_classes = [AllowAny]
     serializer_class = UserSerializer
@@ -247,7 +291,11 @@ class CityAuthRegisterView(APIView):
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(tags=['City: Auth'])
+@extend_schema(
+    tags=['City: Auth'],
+    summary='Логин пользователя города',
+    description='Возвращает JWT-пару токенов для пользователя выбранного города.',
+)
 class CityAuthLoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = TokenObtainPairSerializer
@@ -258,7 +306,11 @@ class CityAuthLoginView(APIView):
         return Response(serializer.validated_data)
 
 
-@extend_schema(tags=['City: Auth'])
+@extend_schema(
+    tags=['City: Auth'],
+    summary='Запрос OTP-кода (не рабочее)',
+    description='Заглушка MVP. Провайдер OTP не подключен (не рабочее).',
+)
 class CityAuthOTPRequestView(APIView):
     permission_classes = [AllowAny]
     serializer_class = UserSerializer
@@ -267,7 +319,11 @@ class CityAuthOTPRequestView(APIView):
         return Response({'ok': True, 'detail': 'OTP provider is not connected in MVP'})
 
 
-@extend_schema(tags=['City: Auth'])
+@extend_schema(
+    tags=['City: Auth'],
+    summary='Подтверждение OTP-кода (не рабочее)',
+    description='Заглушка MVP. Проверка OTP не реализована (не рабочее).',
+)
 class CityAuthOTPVerifyView(APIView):
     permission_classes = [AllowAny]
     serializer_class = UserSerializer
@@ -276,7 +332,11 @@ class CityAuthOTPVerifyView(APIView):
         return Response({'ok': True, 'detail': 'OTP provider is not connected in MVP'})
 
 
-@extend_schema(tags=['City: Auth'])
+@extend_schema(
+    tags=['City: Auth'],
+    summary='Выход пользователя',
+    description='Завершает сессию пользователя на уровне API (logout).',
+)
 class CityAuthLogoutView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
